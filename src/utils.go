@@ -115,7 +115,23 @@ type Options struct {
 	AWSSecret  string `yaml:"secret"`
 	AWSRegion  string `yaml:"region"`
 	S3Host     string `yaml:"s3Host"`
+	S3Acl      string `yaml:"s3Acl"`
 	NoUser     bool   `yaml:"-"`
+}
+
+func checkOptions(options *Options) {
+	if options.AWSRegion != "us-east-1" {
+		options.S3Host = "s3." + options.AWSRegion + ".amazonaws.com"
+	}
+	if options.Bucket == "" {
+		panic("You must specify a bucket")
+	}
+	if options.AWSKey == "" || options.AWSSecret == "" {
+		panic("You must specify your AWS credentials")
+	}
+	if len(options.S3Acl) == 0 {
+		options.S3Acl = string(s3.PublicRead)
+	}
 }
 
 func parseOptions() (o Options, set *flag.FlagSet) {
@@ -131,7 +147,8 @@ func parseOptions() (o Options, set *flag.FlagSet) {
 	set.StringVar(&o.AWSKey, "key", "", "The AWS key to use")
 	set.StringVar(&o.AWSSecret, "secret", "", "The AWS secret of the provided key")
 	set.StringVar(&o.AWSRegion, "region", "us-east-1", "The AWS region the S3 bucket is in")
-	set.StringVar(&o.S3Host, "s3-host", "s3.amazonaws.com", "The hostname of an S3 implementation, overrides region")
+	set.StringVar(&o.S3Host, "s3-host", "s3.us-east-1.amazonaws.com", "The hostname of an S3 implementation, overrides region")
+	set.StringVar(&o.S3Acl, "s3-acl", "public-read", "The ACL to be used when uploading objects to S3")
 	set.BoolVar(&o.NoUser, "no-user", false, "When creating, should we make a user account?")
 
 	set.Parse(os.Args[2:])
@@ -214,7 +231,7 @@ func loadAWSConfig() (access string, secret string) {
 	return cfg.Default.AccessKey, cfg.Default.SecretKey
 }
 
-func copyFile(bucket *s3.Bucket, from string, to string, contentType string, maxAge int) {
+func copyFile(bucket *s3.Bucket, acl s3.ACL, from string, to string, contentType string, maxAge int) {
 	copyOpts := s3.CopyOptions{
 		MetadataDirective: "REPLACE",
 		ContentType:       contentType,
@@ -224,7 +241,7 @@ func copyFile(bucket *s3.Bucket, from string, to string, contentType string, max
 		},
 	}
 
-	_, err := bucket.PutCopy(to, s3.PublicRead, copyOpts, joinPath(bucket.Name, from))
+	_, err := bucket.PutCopy(to, acl, copyOpts, joinPath(bucket.Name, from))
 	if err != nil {
 		panic(err)
 	}

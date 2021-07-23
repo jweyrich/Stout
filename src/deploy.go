@@ -104,6 +104,7 @@ type UploadFileRequest struct {
 	Reader       io.Reader
 	Path         string
 	Dest         string
+	Acl          s3.ACL
 	IncludeHash  bool
 	CacheSeconds int
 }
@@ -144,7 +145,7 @@ func uploadFile(req UploadFileRequest) (remotePath string) {
 
 	op := func() error {
 		// We need to create a new reader each time, as we might be doing this more than once (if it fails)
-		return req.Bucket.PutReader(dest, bytes.NewReader(data), int64(len(data)), guessContentType(dest)+"; charset=utf-8", s3.PublicRead, s3Opts)
+		return req.Bucket.PutReader(dest, bytes.NewReader(data), int64(len(data)), guessContentType(dest)+"; charset=utf-8", req.Acl, s3Opts)
 	}
 
 	back := backoff.NewExponentialBackOff()
@@ -191,11 +192,14 @@ func writeFiles(options Options, includeHash bool, files chan *FileRef) {
 			panic(err)
 		}
 
+		acl := s3.ACL(options.S3Acl)
+
 		(*file).UploadedPath = uploadFile(UploadFileRequest{
 			Bucket:       bucket,
 			Reader:       handle,
 			Path:         partialPath,
 			Dest:         options.Dest,
+			Acl:          acl,
 			IncludeHash:  includeHash,
 			CacheSeconds: ttl,
 		})
@@ -396,18 +400,20 @@ func deployHTML(options Options, id string, file HTMLFile) {
 
 	permPath := joinPath(options.Dest, id, internalPath)
 	curPath := joinPath(options.Dest, internalPath)
+	acl := s3.ACL(options.S3Acl)
 
 	bucket := s3Session.Bucket(options.Bucket)
 	uploadFile(UploadFileRequest{
 		Bucket:       bucket,
 		Reader:       strings.NewReader(data),
 		Path:         permPath,
+		Acl:          acl,
 		IncludeHash:  false,
 		CacheSeconds: FOREVER,
 	})
 
 	log.Println("Copying", permPath, "to", curPath)
-	copyFile(bucket, permPath, curPath, "text/html; charset=utf-8", LIMITED)
+	copyFile(bucket, acl, permPath, curPath, "text/html; charset=utf-8", LIMITED)
 }
 
 func expandFiles(root string, glob string) []string {
@@ -682,14 +688,7 @@ func deployCmd() {
 	options, _ := parseOptions()
 	loadConfigFile(&options)
 	addAWSConfig(&options)
-
-	if options.Bucket == "" {
-		panic("You must specify a bucket")
-	}
-
-	if options.AWSKey == "" || options.AWSSecret == "" {
-		panic("You must specify your AWS credentials")
-	}
+	checkOptions(&options)
 
 	Deploy(options)
 }

@@ -16,8 +16,9 @@ import (
 
 func CreateBucket(options Options) error {
 	bucket := s3Session.Bucket(options.Bucket)
+	acl := s3.ACL(options.S3Acl)
 
-	err := bucket.PutBucket("public-read")
+	err := bucket.PutBucket(acl)
 	if err != nil {
 		return err
 	}
@@ -319,14 +320,7 @@ func createCmd() {
 	options, _ := parseOptions()
 	loadConfigFile(&options)
 	addAWSConfig(&options)
-
-	if options.Bucket == "" {
-		panic("You must specify a bucket")
-	}
-
-	if options.AWSKey == "" || options.AWSSecret == "" {
-		panic("You must specify your AWS credentials")
-	}
+	checkOptions(&options)
 
 	Create(options)
 }

@@ -16,6 +16,8 @@ func Rollback(options Options, version string) {
 
 	bucket := s3Session.Bucket(options.Bucket)
 
+	acl := s3.ACL(options.S3Acl)
+
 	// List files with the correct prefix in bucket
 	// Remove their prefix with a copy.
 
@@ -50,7 +52,7 @@ func Rollback(options Options, version string) {
 
 			log.Printf("Aliasing %s to %s", path, newPath)
 
-			copyFile(bucket, path, newPath, "text/html", LIMITED)
+			copyFile(bucket, acl, path, newPath, "text/html", LIMITED)
 
 			count++
 		}(file)
@@ -67,13 +69,8 @@ func rollbackCmd() {
 
 	loadConfigFile(&options)
 	addAWSConfig(&options)
+	checkOptions(&options)
 
-	if options.Bucket == "" {
-		panic("You must specify a bucket")
-	}
-	if options.AWSKey == "" || options.AWSSecret == "" {
-		panic("You must specify your AWS credentials")
-	}
 	if version == "" {
 		panic("You must specify a version to rollback to")
 	}
