@@ -4,14 +4,10 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"strings"
 
-	"github.com/zackbloom/goamz/cloudfront"
-	"github.com/zackbloom/goamz/iam"
-	"github.com/zackbloom/goamz/route53"
-	"github.com/zackbloom/goamz/s3"
+	"github.com/AdRoll/goamz/iam"
+	"github.com/AdRoll/goamz/s3"
 	"golang.org/x/crypto/ssh/terminal"
-	"golang.org/x/net/publicsuffix"
 )
 
 func CreateBucket(options Options) error {
@@ -30,7 +26,8 @@ func CreateBucket(options Options) error {
 	if err != nil {
 		return err
 	}
-
+	/* DISABLED BY @jweyrich
+	// TODO: Define a proper policy when ACL != public-read
 	err = bucket.PutPolicy([]byte(`{
 			"Version": "2008-10-17",
 			"Statement": [
@@ -49,10 +46,11 @@ func CreateBucket(options Options) error {
 	if err != nil {
 		return err
 	}
-
+	*/
 	return nil
 }
 
+/* DISABLED BY @jweyrich
 func GetDistribution(options Options) (dist cloudfront.DistributionSummary, err error) {
 	distP, err := cfSession.FindDistributionByAlias(options.Bucket)
 	if err != nil {
@@ -117,6 +115,7 @@ func GetDistribution(options Options) (dist cloudfront.DistributionSummary, err 
 
 	return cfSession.Create(conf)
 }
+*/
 
 func CreateUser(options Options) (key iam.AccessKey, err error) {
 	name := options.Bucket + "_deploy"
@@ -162,6 +161,7 @@ func CreateUser(options Options) (key iam.AccessKey, err error) {
 	return keyResp.AccessKey, nil
 }
 
+/* DISABLED BY @jweyrich
 func UpdateRoute(options Options, dist cloudfront.DistributionSummary) error {
 	zoneName, err := publicsuffix.EffectiveTLDPlusOne(options.Bucket)
 	if err != nil {
@@ -230,6 +230,7 @@ func UpdateRoute(options Options, dist cloudfront.DistributionSummary) error {
 
 	return nil
 }
+*/
 
 func Create(options Options) {
 	if s3Session == nil {
@@ -261,7 +262,9 @@ func Create(options Options) {
 	}
 
 	fmt.Println("Loading/Creating CloudFront Distribution")
+	/* DISABLED BY @jweyrich
 	dist, err := GetDistribution(options)
+	*/
 
 	if err != nil {
 		fmt.Println("Error loading/creating CloudFront distribution")
@@ -270,7 +273,9 @@ func Create(options Options) {
 	}
 
 	fmt.Println("Adding Route")
+	/* DISABLED BY @jweyrich
 	err = UpdateRoute(options, dist)
+	*/
 
 	if err != nil {
 		fmt.Println("Error adding route to Route53 DNS config")
@@ -304,7 +309,7 @@ can add them as environment variables and pass those variables to the deploy
 commands (see the README).
 
 Your first deploy command might be:
-	
+
 	stout deploy --bucket ` + options.Bucket + ` --key ` + key.Id + ` --secret '` + key.Secret + `'
 `)
 		}

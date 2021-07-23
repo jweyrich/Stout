@@ -10,14 +10,14 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/AdRoll/goamz/aws"
+	"github.com/AdRoll/goamz/cloudfront"
+	"github.com/AdRoll/goamz/iam"
+	"github.com/AdRoll/goamz/route53"
+	"github.com/AdRoll/goamz/s3"
 	"github.com/imdario/mergo"
 	homedir "github.com/mitchellh/go-homedir"
 	ini "github.com/sspencer/go-ini"
-	"github.com/zackbloom/goamz/aws"
-	"github.com/zackbloom/goamz/cloudfront"
-	"github.com/zackbloom/goamz/iam"
-	"github.com/zackbloom/goamz/route53"
-	"github.com/zackbloom/goamz/s3"
 	"gopkg.in/yaml.v1"
 )
 
@@ -66,11 +66,14 @@ func openIAM(key, secret, region string) *iam.IAM {
 }
 
 func openCloudFront(key, secret string) *cloudfront.CloudFront {
+	/* DISABLED BY @jweyrich
 	auth := aws.Auth{
 		AccessKey: key,
 		SecretKey: secret,
 	}
 	return cloudfront.NewCloudFront(auth)
+	*/
+	return nil
 }
 
 func openRoute53(key, secret string) *route53.Route53 {

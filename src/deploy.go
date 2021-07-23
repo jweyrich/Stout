@@ -22,8 +22,8 @@ import (
 
 	"log"
 
+	"github.com/AdRoll/goamz/s3"
 	"github.com/wsxiaoys/terminal/color"
-	"github.com/zackbloom/goamz/s3"
 )
 
 const (
