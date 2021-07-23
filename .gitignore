@@ -1,3 +1,4 @@
-.DS_Store
-builds/
-debian/
+/.DS_Store
+/builds/
+/debian/
+/go.sum
